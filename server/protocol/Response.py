@@ -13,7 +13,9 @@ class Response:
         header = struct.pack("<BHI", SERVER_VERSION, self.code, self.payload_size)
         payload = self.payload
         
-        # TODO: payload can be None on error msgs
+        if self.code == 2107 or self.code == 2101:
+            return header
+
         return header+payload
 
 

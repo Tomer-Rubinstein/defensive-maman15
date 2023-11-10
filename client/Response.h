@@ -10,6 +10,7 @@
 
 class Response {
 private:
+	bool relogin_req_failed = false;
 	unsigned int server_version=0;
 	unsigned int code=0;
 	unsigned int payload_size=0;
@@ -22,4 +23,6 @@ public:
 	Response(SOCKET client_socket);
 	void handle_payload(FileTransfer* file, Request* reqManager);
 	void read_header();
+
+	bool is_relogin_req_failed();
 };

@@ -16,16 +16,6 @@ class Database:
 
         self.conn.row_factory = dict_factory
         self.cur = self.conn.cursor()
-        
-        # load clients & files tables from database to RAM
-        clients_entries = self.load_clients_list()
-        files_entries = self.load_files_list()
-
-        self.client_names = defaultdict(None, {doc["name"]: doc["uid"] for doc in clients_entries})
-        self.clients = defaultdict(None, {doc["uid"]: doc for doc in clients_entries})
-        self.files = defaultdict(None, {doc["uid"]+"/"+doc["filename"]: doc for doc in files_entries})
-
-        print("### self.clients: ####\n", self.clients)
 
 
     def load_clients_list(self) -> list:
@@ -44,7 +34,7 @@ class Database:
         :param length: length (in chars) of result uid
         :return: random string of given length from list of upper, lower characters and digits
         """
-        chars = [*(string.ascii_lowercase + string.digits)]
+        chars = [*("abcdef" + string.digits)]
         rand_chars_list = [random.choice(chars) for _ in range(length)]
         return "".join(rand_chars_list)
 
@@ -75,6 +65,16 @@ class Database:
                 verified INTEGER
             )
         """)
+
+        # load clients & files tables from database to RAM
+        clients_entries = self.load_clients_list()
+        files_entries = self.load_files_list()
+
+        self.client_names = defaultdict(None, {doc["name"]: doc["uid"] for doc in clients_entries})
+        self.clients = defaultdict(None, {doc["uid"]: doc for doc in clients_entries})
+        self.files = defaultdict(None, {doc["uid"]+"/"+doc["filename"]: doc for doc in files_entries})
+
+        print("### self.clients: ####\n", self.clients)
 
 
     def create_client_dict(self, uid, name, publicKey, lastSeen, AESKey):
@@ -110,6 +110,7 @@ class Database:
     
 
     def get_client_by_id(self, client_id) -> tuple:
+        print("self.clients:", self.clients)
         client_entry = self.clients.get(client_id)
         return client_entry
 
@@ -246,5 +247,7 @@ class Database:
 #     db = Database("defensive.db")
 #     db.init_tables()
 #     # print(db.add_new_client("test", "publickeysmth", "today", "aes_key"))
-#     name = "tomer"
-#     print(db.get_client_by_name(name))
+#     res = db.add_new_client(16*2)
+#     print()
+#     print(res)
+#     print(int(res,16))

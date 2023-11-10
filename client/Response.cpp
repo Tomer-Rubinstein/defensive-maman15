@@ -137,10 +137,19 @@ void Response::handle_payload(FileTransfer* file, Request* reqManager) {
 		file->set_aes_key(encrypted_aes_key_str);
 		break;
 	}
-	case 2106: break;
+	case 2106: {
+		char* user_id = (char*)malloc(16 * sizeof(char));
+		memset(user_id, 0, 16);
+		recv(this->sock, user_id, 16, 0);
+
+		this->relogin_req_failed = true;
+		break;
+	}
 	case 2107:
 		err_n_die("Server responded with an error, exiting..");
 		break;
 	default: break;
 	}
 }
+
+bool Response::is_relogin_req_failed() { return this->relogin_req_failed; }

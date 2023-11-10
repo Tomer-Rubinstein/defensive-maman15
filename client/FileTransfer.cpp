@@ -21,10 +21,17 @@ std::string read_file(std::string filepath) {
 		err_n_die("filepath does not exist!");
 	}
 
-	std::ifstream file(filepath);
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	return buffer.str();
+	std::ifstream file(filepath, std::ifstream::binary);
+	
+	std::vector<char> bytes(
+		(std::istreambuf_iterator<char>(file)),
+		(std::istreambuf_iterator<char>())
+	);
+
+	std::string filecontent(bytes.begin(), bytes.end());
+
+	file.close();
+	return filecontent;
 }
 
 FileTransfer::FileTransfer(std::string filepath) {
