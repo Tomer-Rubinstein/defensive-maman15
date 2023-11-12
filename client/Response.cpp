@@ -27,8 +27,6 @@ std::string read_user_id(SOCKET client_socket) {
 	uuid_hex += higher_hexis;
 	uuid_hex += lower_hexis;
 
-	std::cout << "uuid_hex = " << uuid_hex << std::endl;
-
 	return uuid_hex;
 }
 
@@ -97,10 +95,10 @@ bool Response::handle_crc_validation(FileTransfer* file, Request* reqManager) {
 }
 
 void Response::handle_payload(FileTransfer* file, Request* reqManager) {
-	std::cout << "server_version: " << this->server_version << std::endl;
-	std::cout << "code: " << this->code << std::endl;
-	std::cout << "payload size: " << this->payload_size << std::endl;
-
+	std::cout << "Got response:" << std::endl;
+	std::cout << "\tserver_version: " << this->server_version << std::endl;
+	std::cout << "\tcode: " << this->code << std::endl;
+	std::cout << "\tpayload size: " << this->payload_size << std::endl;
 
 	if (this->code != 2101 && this->code != 2107) {
 		// requests 2101, 2107, do not any payload
@@ -149,9 +147,6 @@ void Response::handle_payload(FileTransfer* file, Request* reqManager) {
 		recv(this->sock, encrypted_aes_key, key_length, 0);
 
 		std::string encrypted_aes_key_str = std::string(encrypted_aes_key, key_length);
-
-		std::cout << "key-length: " << key_length << std::endl;
-		std::cout << "encrypted_aes_key base64 " << encrypted_aes_key_str << std::endl;
 
 		// decrypt encrypted_aes_key with private key of RSA
 		file->set_aes_key(encrypted_aes_key_str);

@@ -88,9 +88,6 @@ int main() {
 	TransferInfo* transfer_info = new TransferInfo();
 	FileTransfer* file = new FileTransfer(transfer_info->get_target_filepath());
 
-	std::cout << "public key base64: " << file->get_pubkey_b64() << std::endl;
-	std::cout << "private key base64: " << file->get_privkey_b64() << std::endl;
-
 	SOCKET client_socket = connect_to_server(HOST, PORT);
 
 	Request* req = new Request(client_socket);

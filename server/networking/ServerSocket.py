@@ -4,6 +4,7 @@ from protocol import Request
 from DatabaseUtils import Database
 from protocol import Response
 
+
 class ServerSocket:
     def __init__(self, port, host):
         self.host = host
@@ -42,7 +43,6 @@ class ServerSocket:
             self.disconnect_client(client_socket)
 
 
-
     def handle_connections(self, db: Database):
         while True:
             events = self.sel.select()
@@ -56,4 +56,3 @@ class ServerSocket:
         print("[+] New connection established")
         conn.setblocking(False)
         self.sel.register(conn, selectors.EVENT_READ, self.handle_client)
-

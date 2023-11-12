@@ -25,7 +25,5 @@ std::vector<std::string> split_lines(std::string filecontent) {
 		current_line += current_char;
 	}
 
-	std::cout << "lines count:" << file_lines.size() << std::endl;
-
 	return file_lines;
 }

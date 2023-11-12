@@ -79,7 +79,6 @@ void Request::register_request(std::string username) {
 
 	// send payload
 	send(this->sock, (char*)&req_payload, USERNAME_PAYLOAD_SIZE, 0);
-	std::cout << "sent payload with name " << req_payload.username << std::endl;
 }
 
 void Request::public_key_request(std::string username, std::string public_key) {
@@ -117,9 +116,6 @@ void Request::send_file_request(std::string filename, std::string filecontent) {
 
 	req_payload_header.content_size = filecontent.length();
 	memcpy(req_payload_header.filename, filename.c_str(), filename.length());
-
-	std::cout << "[DEBUG] content_size: " << req_payload_header.content_size << std::endl;
-	std::cout << "[DEBUG] filename: " << req_payload_header.filename << std::endl;
 
 	// send header: code=1028, payload_size=255+4
 	this->send_header(SEND_FILE_REQ_CODE, FILENAME_PAYLOAD_SIZE+4);
@@ -178,7 +174,7 @@ void Request::relogin_request(std::string username) {
 	NameOnlyPayload req_payload = { 0 };
 
 	if (username.length() > 255) {
-		err_n_die("Username too long!");
+		err_n_die("username too long!");
 	}
 
 	memcpy(req_payload.username, username.c_str(), username.length());

@@ -1,5 +1,4 @@
 import socket
-import base64
 import os
 
 import Crypto
@@ -11,8 +10,6 @@ from .Response import *
 from cksum import memcrc
 from DatabaseUtils import Database
 
-
-# TODO use functions payload_resp_code_X to create response payloads
 
 class Request:
     def __init__(self, sock: socket.socket, db: Database):
@@ -57,17 +54,20 @@ class Request:
         self.client_id = Response.unpack_uuid(self.client_id) # convert client_id to hex string from 16 bytes
 
         try:
-            int(self.client_id, 16)
+            # bytes(16).decode() is returned from Response.unpack_uuid()
+            # if given uuid is None => don't try to convert None to hex.
+            if self.client_id != bytes(16).decode():
+                int(self.client_id, 16)
         except ValueError:
             print("[ERROR] Invalid client_id, not an hex value!", self.client_id)
-            return True # <--------- [DEBUG] -------------
+            return False
 
         return True
 
 
     def register_user(self, name):
         new_uid = self.db.add_new_client(name)
-        print("new uid: ", new_uid)
+        print("New generated UUID: ", new_uid)
         if not new_uid:
             # user by that name already exists
             return Response(2101, 0, None)
@@ -104,14 +104,11 @@ class Request:
             return Response(2107, 0, None)
 
         aes_key = client["AESKey"]
-    
-        print("aes_key:", base64.b64encode(aes_key))
 
         # decrypt filecontent with aes key
         iv = 16 * b'\x00'
         aes_cipher = AES.new(aes_key, AES.MODE_CBC, iv)
         filecontent_bytes = aes_cipher.decrypt(encrypted_filecontent)
-        print("got bytes: ", filecontent_bytes)
         filecontent_bytes = unpad(filecontent_bytes, 16)
 
         # save in disk as <filename>
@@ -154,14 +151,12 @@ class Request:
     def handle_request(self):
         # code 2107 in this context means invalid opcode.
         resp = Response(code=2107, payload_size=0, payload=None)
-        print("got opcode of: ", self.opcode)
+        print("Got request code:", self.opcode)
 
         if self.opcode == 1025:
             # registration request
             # payload = name[255 bytes]
-            print("in 1025..")
             name = self.recv_str_with_null_term(255).decode()
-            print("got name:", name)
             resp = self.register_user(name)
         elif self.opcode == 1026:
             # send public key of user request
@@ -204,7 +199,7 @@ class Request:
             filename = self.recv_str_with_null_term(255).decode()
             payload = payload_resp_code_2104(self.client_id.encode())
             
-            # mark file in db as un-verified
+            # mark file in db as not verified
             self.db.set_file_verified(self.client_id, filename, False)
             resp = Response(2104, 16, payload)
 
@@ -212,7 +207,7 @@ class Request:
         self.db.update_last_seen(self.client_id)
 
         # send response to client
-        print("sending:")
+        print("Sending response:")
         print("\tcode:", resp.code)
         print("\tpayload_size:", resp.payload_size)
         print("\tpayload:", resp.payload)

@@ -32,4 +32,3 @@ std::string PrivKeyFile::get_b64_priv_key() {
 	buffer << file.rdbuf();
 	return std::string(buffer.str());
 }
-

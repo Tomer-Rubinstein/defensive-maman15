@@ -25,7 +25,7 @@ TransferInfo::TransferInfo() {
 	std::vector<std::string> file_lines = split_lines(filecontent);
 
 	if (file_lines.size() != 3) {
-		err_n_die("Invalid format for transfer.info");
+		err_n_die("Invalid format for transfer.info (not 3 lines)");
 	}
 
 	this->host_addr = file_lines.at(0);

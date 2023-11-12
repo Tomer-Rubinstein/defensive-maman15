@@ -2,6 +2,7 @@ import struct
 
 SERVER_VERSION = 2
 
+
 class Response:
     def __init__(self, code, payload_size, payload):
         self.code = code
@@ -12,7 +13,6 @@ class Response:
     @staticmethod
     def pack_uuid(uuid_hex) -> bytes:
         uuid_int = int(uuid_hex, 16)
-        print("uuid_int is ", uuid_int)
         max_int64 = 0xFFFFFFFFFFFFFFFF
 
         return struct.pack("<QQ", (uuid_int & max_int64), (uuid_int >> 64))
@@ -22,9 +22,10 @@ class Response:
     def unpack_uuid(uuid_bytes):
         if uuid_bytes == bytes(16) or uuid_bytes == b'':
             return bytes(16).decode()
+
         a, b = struct.unpack("<QQ", uuid_bytes)
         unpacked = (b << 64) | a
-        return f'{unpacked:x}'
+        return f'{unpacked:x}' # convert to hex string without '0x' prefix
 
 
     def pack(self):
@@ -41,13 +42,11 @@ class Response:
 # the following functions are used to generate payloads
 # for the different kinds of possible responses
 # -----------------------------------------------------
+# NOTE: no payload for response codes 2107, 2101.
+
 
 def payload_resp_code_2100(client_id: str):
     return Response.pack_uuid(client_id)
-
-
-def payload_resp_code_2101():
-    ...
 
 
 def payload_resp_code_2102(client_id: str, encrypted_aes_key: bytes):
@@ -73,21 +72,3 @@ def payload_resp_code_2105(client_id: str, encrypted_aes_key: bytes):
 
 def payload_resp_code_2106(client_id: str):
     return payload_resp_code_2100(client_id)
-
-
-def payload_resp_code_2107():
-    ...
-
-
-
-# DEBUG
-if __name__ == "__main__":
-    import uuid
-    u = uuid.uuid4().hex
-    packed = Response.pack_uuid(u)
-    unpacked = Response.unpack_uuid(packed)
-
-    print(u)
-    print(packed)
-    print(unpacked)
-

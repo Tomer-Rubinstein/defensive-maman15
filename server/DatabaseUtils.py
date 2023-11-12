@@ -1,11 +1,8 @@
 import sqlite3
-import string
-import random
 from datetime import datetime
 from collections import defaultdict
-
 import uuid
-import struct
+
 
 class Database:
     def __init__(self, db_filename):
@@ -29,18 +26,6 @@ class Database:
     def load_files_list(self) -> list:
         res = self.cur.execute("SELECT * FROM files")
         return res.fetchall()
-
-
-    # import uuid
-    # import struct
-
-    # uuid = uuid.uuid4()
-
-    # max_int64 = 0xFFFFFFFFFFFFFFFF
-    # packed = struct.pack("<QQ", uuid.int & max_int64, (uuid.int >> 64))
-    # # unpack
-    # a, b = struct.unpack("<QQ", packed)
-    # unpacked = (b<<64)|a
 
 
     def init_tables(self):
@@ -78,7 +63,7 @@ class Database:
         self.clients = defaultdict(None, {doc["uid"]: doc for doc in clients_entries})
         self.files = defaultdict(None, {doc["uid"]+"/"+doc["filename"]: doc for doc in files_entries})
 
-        print("### self.clients: ####\n", self.clients)
+        print("### clients table ###\n", self.clients, "\n")
 
 
     def create_client_dict(self, uid, name, publicKey, lastSeen, AESKey):
@@ -109,17 +94,10 @@ class Database:
         client_entry = self.clients.get(client_id)
 
         return client_entry
-        # res = self.cur.execute("SELECT * FROM clients WHERE name=?", (name,))
-        # return res.fetchone()
-    
+
 
     def get_client_by_id(self, client_id) -> tuple:
-        print("self.clients:", self.clients)
-        client_entry = self.clients.get(client_id)
-        return client_entry
-
-        # res = self.cur.execute("SELECT * FROM clients WHERE uid=?", (client_id,))
-        # return res.fetchone()
+        return self.clients.get(client_id)
 
 
     def add_new_client(self, name) -> bool:
@@ -134,11 +112,7 @@ class Database:
             # user by that name already registered
             return None
 
-        uid = uuid.uuid4() # .hex
-        print("new uid int:", uid.int)
-        uid = uid.hex 
-
-
+        uid = uuid.uuid4().hex
 
         # update the real database directly
         self.cur.execute("""
@@ -248,14 +222,3 @@ class Database:
 
         new_file_key = client_id+"/"+filename
         self.files[new_file_key] = self.create_file_dict(client_id, filename, pathname, int(verified))
-
-
-# # [DEBUG]
-# if __name__ == "__main__":
-#     db = Database("defensive.db")
-#     db.init_tables()
-#     # print(db.add_new_client("test", "publickeysmth", "today", "aes_key"))
-#     res = db.add_new_client(16*2)
-#     print()
-#     print(res)
-#     print(int(res,16))
