@@ -11,6 +11,7 @@
 class Response {
 private:
 	bool relogin_req_failed = false;
+	std::string user_id;
 	unsigned int server_version=0;
 	unsigned int code=0;
 	unsigned int payload_size=0;

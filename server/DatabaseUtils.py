@@ -4,6 +4,9 @@ import random
 from datetime import datetime
 from collections import defaultdict
 
+import uuid
+import struct
+
 class Database:
     def __init__(self, db_filename):
         self.conn = sqlite3.connect(db_filename)
@@ -28,15 +31,16 @@ class Database:
         return res.fetchall()
 
 
-    @staticmethod
-    def generate_uid(length) -> str:
-        """
-        :param length: length (in chars) of result uid
-        :return: random string of given length from list of upper, lower characters and digits
-        """
-        chars = [*("abcdef" + string.digits)]
-        rand_chars_list = [random.choice(chars) for _ in range(length)]
-        return "".join(rand_chars_list)
+    # import uuid
+    # import struct
+
+    # uuid = uuid.uuid4()
+
+    # max_int64 = 0xFFFFFFFFFFFFFFFF
+    # packed = struct.pack("<QQ", uuid.int & max_int64, (uuid.int >> 64))
+    # # unpack
+    # a, b = struct.unpack("<QQ", packed)
+    # unpacked = (b<<64)|a
 
 
     def init_tables(self):
@@ -130,7 +134,11 @@ class Database:
             # user by that name already registered
             return None
 
-        uid = self.generate_uid(16)
+        uid = uuid.uuid4() # .hex
+        print("new uid int:", uid.int)
+        uid = uid.hex 
+
+
 
         # update the real database directly
         self.cur.execute("""
@@ -170,7 +178,7 @@ class Database:
 
         self.clients[user["uid"]]["publicKey"] = public_key
 
-        return user["uid"] # user id
+        return user["uid"]
 
 
     def set_aes_key(self, aes_key, client_id):

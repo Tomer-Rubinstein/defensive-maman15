@@ -24,7 +24,6 @@
 
 
 struct RequestHeader {
-	char uid[16];
 	unsigned char version;
 	unsigned short code;
 	unsigned int payload_size;

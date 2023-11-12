@@ -1,30 +1,68 @@
+#include <sstream>
+
 #include "Request.h"
 #include "Response.h"
 #include "Utils.h"
 #pragma pack(1)
 
-#define HEADER_SIZE 16 + 1 + 2 + 4
+#define HEADER_SIZE 1 + 2 + 4
 
 Request::Request(SOCKET sock) {
 	this->sock = sock;
-	this->client_id = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+	this->client_id = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 }
 
 void Request::set_client_id(const char* client_id) {
-	this->client_id = (const char*) malloc(17 * sizeof(char));
-	memset((char*)this->client_id, 0, 17);
-	memcpy((char*)this->client_id, client_id, 16);
+	this->client_id = (const char*) malloc((32+1) * sizeof(char));
+	memset((char*)this->client_id, 0, 32+1);
+	memcpy((char*)this->client_id, client_id, 32);
 }
 
 void Request::send_header(int code, int payload_size) {
 	RequestHeader req_header = {
-		{ 0 },
 		this->CLIENT_VERSION,
 		code,
 		payload_size
 	};
 
-	memcpy(req_header.uid, this->client_id, 16);
+	// since client_id is the first 16 bytes of the header,
+	// send it as 2 seperated 8-byte packets
+	std::string uuid(this->client_id);
+	if (uuid.length() == 0) {
+		// uuid is null bytes, happens in registration request
+		// where the uuid is not needed.
+		// send 16 null bytes as the uuid in response.
+		char* null_bytes = (char*)malloc(16 * sizeof(char));
+		memset((char*)null_bytes, 0, 16);
+		send(this->sock, null_bytes, 16, 0);
+	} else {
+		// send lower
+		std::stringstream ss1;
+		std::string lower = uuid.substr(16, 16);
+		unsigned long long lower_int;
+		ss1 << std::hex << lower;
+		ss1 >> lower_int;
+
+		// send higher
+		std::stringstream ss2;
+		std::string higher = uuid.substr(0, 16);
+		unsigned long long higher_int;
+		ss2 << std::hex << higher;
+		ss2 >> higher_int;
+
+		struct uuid {
+			unsigned long long lower_int;
+			unsigned long long higher_int;
+		};
+
+		struct uuid user_id = { 0 };
+		user_id.lower_int = lower_int;
+		user_id.higher_int = higher_int;
+
+		send(this->sock, (char*)&user_id, 16, 0);
+	}
+
+	// send the rest of the header
 	send(this->sock, (char*)&req_header, HEADER_SIZE, 0);
 }
 
@@ -41,6 +79,7 @@ void Request::register_request(std::string username) {
 
 	// send payload
 	send(this->sock, (char*)&req_payload, USERNAME_PAYLOAD_SIZE, 0);
+	std::cout << "sent payload with name " << req_payload.username << std::endl;
 }
 
 void Request::public_key_request(std::string username, std::string public_key) {

@@ -86,14 +86,10 @@ void FileTransfer::set_aes_key(std::string encrypted_aes_key) {
 std::string FileTransfer::get_encrypted_filecontent() {
 	std::string filecontent = read_file(this->filepath);
 
-	std::cout << "sending filecontent: " << filecontent << std::endl;
-
 	// encrypt with aes_key
 	AESWrapper* aes_wrapper = new AESWrapper((const unsigned char*)this->aes_key.c_str(), 16);
 	std::string encrypted_filecontent = aes_wrapper->encrypt(filecontent.c_str(), filecontent.length());
 	
-	std::cout << "encrypted file content: " << encrypted_filecontent << std::endl;
-
 	return encrypted_filecontent;
 }
 

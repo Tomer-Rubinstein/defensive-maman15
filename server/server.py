@@ -1,10 +1,14 @@
 from networking.ServerSocket import ServerSocket
 from DatabaseUtils import Database
-
+import os
 
 def main():
     port = load_port("port.info")
     
+    # bla
+    os.makedirs(".\\uploaded_files\\", exist_ok=True)
+    os.chdir(".\\uploaded_files")
+
     db = Database("defensive.db")
     db.init_tables()
 

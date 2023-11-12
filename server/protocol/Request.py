@@ -43,7 +43,7 @@ class Request:
 
     def read_header(self):
         # read constant header bytes, according to the protocol
-        self.client_id = self.sock.recv(16).decode()
+        self.client_id = self.sock.recv(16)
         self.client_version = self.bytes_to_int(self.sock.recv(1))
         self.opcode = self.bytes_to_int(self.sock.recv(2))
         self.payload_size = self.bytes_to_int(self.sock.recv(4))
@@ -53,6 +53,8 @@ class Request:
         print(f"\tclient_version = {self.client_version}")
         print(f"\topcode = {self.opcode}")
         print(f"\tpayload_size = {self.payload_size}")
+
+        self.client_id = Response.unpack_uuid(self.client_id) # convert client_id to hex string from 16 bytes
 
         try:
             int(self.client_id, 16)
@@ -65,10 +67,13 @@ class Request:
 
     def register_user(self, name):
         new_uid = self.db.add_new_client(name)
+        print("new uid: ", new_uid)
         if not new_uid:
             # user by that name already exists
             return Response(2101, 0, None)
-        return Response(2100, 16, new_uid.encode())
+
+        payload = payload_resp_code_2100(new_uid)
+        return Response(2100, 16, payload)
 
 
     def set_public_key(self, name, public_key):
@@ -88,7 +93,7 @@ class Request:
         encrypted_aes_key = cipher_rsa.encrypt(aes_key)
 
         # send response to client
-        payload = payload_resp_code_2102(uid.encode(), encrypted_aes_key)
+        payload = payload_resp_code_2102(uid, encrypted_aes_key)
         return Response(2102, len(payload), payload)
 
 
@@ -121,14 +126,14 @@ class Request:
         # calculate checksum
         checksum = memcrc(filecontent_bytes)
 
-        payload = payload_resp_code_2103(client_id.encode(), len(encrypted_filecontent), filename.encode(), checksum)
+        payload = payload_resp_code_2103(client_id, len(encrypted_filecontent), filename.encode(), checksum)
         return Response(2103, 16+4+255+4, payload)
 
 
     def relogin_user(self, username):
         user = self.db.get_client_by_name(username)
         if not user or not user["publicKey"]:
-            return Response(2106, 16, payload_resp_code_2106(self.client_id.encode()))
+            return Response(2106, 16, payload_resp_code_2106(self.client_id))
 
         # generate new AES key
         new_aes_key = Crypto.Random.get_random_bytes(16)
@@ -142,18 +147,21 @@ class Request:
         encrypted_aes_key = cipher_rsa.encrypt(new_aes_key)
 
         # send success Response(2105, client_id, encrypted_aes_key)
-        payload = payload_resp_code_2105(self.client_id.encode(), encrypted_aes_key)
+        payload = payload_resp_code_2105(self.client_id, encrypted_aes_key)
         return Response(2105, len(payload), payload)
 
 
     def handle_request(self):
         # code 2107 in this context means invalid opcode.
         resp = Response(code=2107, payload_size=0, payload=None)
+        print("got opcode of: ", self.opcode)
 
         if self.opcode == 1025:
             # registration request
             # payload = name[255 bytes]
+            print("in 1025..")
             name = self.recv_str_with_null_term(255).decode()
+            print("got name:", name)
             resp = self.register_user(name)
         elif self.opcode == 1026:
             # send public key of user request

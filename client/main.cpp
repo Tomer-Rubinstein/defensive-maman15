@@ -84,7 +84,6 @@ void handle_relogin(SOCKET client_socket, MeInfo** me_info, PrivKeyFile** priv_k
 	}
 }
 
-
 int main() {
 	TransferInfo* transfer_info = new TransferInfo();
 	FileTransfer* file = new FileTransfer(transfer_info->get_target_filepath());
@@ -96,9 +95,7 @@ int main() {
 
 	Request* req = new Request(client_socket);
 	Response* resp = new Response(client_socket);
-
-	std::cout << "test" << std::endl;
-
+	
 	// login or signup
 	MeInfo* me_info = new MeInfo();
 	PrivKeyFile* priv_key_file = new PrivKeyFile();

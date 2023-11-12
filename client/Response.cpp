@@ -8,6 +8,30 @@ Response::Response(SOCKET client_socket) {
 	this->sock = client_socket;
 }
 
+std::string read_user_id(SOCKET client_socket) {
+	// convert the 16 byte integer to a 32-char hex
+	unsigned long long lower_bytes = 0;
+	unsigned long long higher_bytes = 0;
+
+	recv(client_socket, (char*)&lower_bytes, 8, 0);
+	recv(client_socket, (char*)&higher_bytes, 8, 0);
+
+	char* lower_hexis = (char*)malloc((16 + 1) * sizeof(char));
+	char* higher_hexis = (char*)malloc((16 + 1) * sizeof(char));
+
+	// convert to hex
+	snprintf(lower_hexis, 16 + 1, "%llx", lower_bytes);
+	snprintf(higher_hexis, 16 + 1, "%llx", higher_bytes);
+
+	std::string uuid_hex = "";
+	uuid_hex += higher_hexis;
+	uuid_hex += lower_hexis;
+
+	std::cout << "uuid_hex = " << uuid_hex << std::endl;
+
+	return uuid_hex;
+}
+
 void Response::read_header() {
 	// read server version from header
 	recv(this->sock, (char*)&this->server_version, 1, 0);
@@ -21,12 +45,11 @@ void Response::read_header() {
 
 // handle response code 2103
 bool Response::handle_crc_validation(FileTransfer* file, Request* reqManager) {
-	char* user_id = (char*)malloc(16 * sizeof(char));
-	memset(user_id, 0, 16);
-	recv(this->sock, user_id, 16, 0);
-
+	// std::cout << "in handle_crc_validation, this->uuid=" << reqManager->get_client_id() << std::endl;
 	int content_size = 0; // size of file after encryption
 	recv(this->sock, (char*)&content_size, 4, 0);
+
+	// std::cout << "in handle_crc_validation, content_size=" << content_size << std::endl;
 
 	char* filename = (char*)malloc(255 * sizeof(char));
 	memset(filename, 0, 255);
@@ -40,6 +63,10 @@ bool Response::handle_crc_validation(FileTransfer* file, Request* reqManager) {
 	if (this->crc_cycles_count == MAX_CRC_CYCLE_CALLS) {
 		// send 1031, could not send valid CRC <MAX_CRC_CYCLE_CALLS> times, give up
 		reqManager->final_invalid_crc_request(filename_str);
+
+		this->read_header();
+		this->handle_payload(file, reqManager);
+
 		return false;
 	}
 
@@ -70,22 +97,26 @@ bool Response::handle_crc_validation(FileTransfer* file, Request* reqManager) {
 }
 
 void Response::handle_payload(FileTransfer* file, Request* reqManager) {
+	std::cout << "server_version: " << this->server_version << std::endl;
 	std::cout << "code: " << this->code << std::endl;
+	std::cout << "payload size: " << this->payload_size << std::endl;
 
+
+	if (this->code != 2101 && this->code != 2107) {
+		// requests 2101, 2107, do not any payload
+		// so don't try to read user id from payload
+		this->user_id = read_user_id(this->sock);
+	}
+	
 	switch (this->code) {
 	case 2100: {
-		char* user_id = (char*)malloc(16 * sizeof(char));
-		recv(this->sock, user_id, 16, 0);
-
-		reqManager->set_client_id(user_id);
+		reqManager->set_client_id(this->user_id.c_str());
 		break;
 	}
-	case 2101: break;
+	case 2101:
+		err_n_die("User by that name already exists!");
+		break;
 	case 2102: {
-		char* user_id = (char*)malloc(16 * sizeof(char));
-		memset(user_id, 0, 16);
-		recv(this->sock, user_id, 16, 0);
-
 		int key_length = this->payload_size - 16;
 		char* encrypted_aes_key = (char*)malloc(key_length * sizeof(char));
 		memset(encrypted_aes_key, 0, key_length);
@@ -109,24 +140,13 @@ void Response::handle_payload(FileTransfer* file, Request* reqManager) {
 		break;
 	}
 	case 2104: {
-		char* user_id = (char*)malloc(16 * sizeof(char));
-		memset(user_id, 0, 16);
-		recv(this->sock, user_id, 16, 0);
 		break;
 	}
 	case 2105: {
-		char* user_id = (char*)malloc(17 * sizeof(char));
-		memset(user_id, 0, 17);
-		recv(this->sock, user_id, 16, 0);
-
-		std::cout << "bruh user id is: " << user_id << std::endl;
-
 		int key_length = this->payload_size - 16;
 		char* encrypted_aes_key = (char*)malloc(key_length * sizeof(char));
 		memset(encrypted_aes_key, 0, key_length);
 		recv(this->sock, encrypted_aes_key, key_length, 0);
-
-		std::cout << "lil blud wtf: " << encrypted_aes_key << std::endl;
 
 		std::string encrypted_aes_key_str = std::string(encrypted_aes_key, key_length);
 
@@ -138,17 +158,15 @@ void Response::handle_payload(FileTransfer* file, Request* reqManager) {
 		break;
 	}
 	case 2106: {
-		char* user_id = (char*)malloc(16 * sizeof(char));
-		memset(user_id, 0, 16);
-		recv(this->sock, user_id, 16, 0);
-
 		this->relogin_req_failed = true;
 		break;
 	}
 	case 2107:
 		err_n_die("Server responded with an error, exiting..");
 		break;
-	default: break;
+	default:
+		err_n_die("Server responded with an unknown code, exiting..");
+		break;
 	}
 }
 

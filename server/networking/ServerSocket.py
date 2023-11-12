@@ -20,6 +20,12 @@ class ServerSocket:
         print(f"Server listening on port: {self.port}..")
 
 
+    def disconnect_client(self, sock):
+        self.sel.unregister(sock)
+        sock.close()
+        print("[-] Client disconnected")
+
+
     def handle_client(self, client_socket: socket.socket, db: Database):
         req = Request(client_socket, db)
         try:
@@ -28,10 +34,13 @@ class ServerSocket:
                 client_socket.sendall(resp)
                 return
             req.handle_request()
-        except:
-            self.sel.unregister(client_socket)
-            client_socket.close()
-            print("[-] Lost connection")
+        except ConnectionAbortedError:
+            # end of communication
+            self.disconnect_client(client_socket)
+        except ConnectionResetError:
+            # client internal error
+            self.disconnect_client(client_socket)
+
 
 
     def handle_connections(self, db: Database):
