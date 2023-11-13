@@ -22,6 +22,24 @@ class Request:
         return int.from_bytes(bytestring, byteorder="little", signed=False)
 
 
+    @staticmethod
+    def extract_filename(filename):
+        """
+        extract actual filename from given user input from his relative
+        path to the file (either '\' or '/' used).
+        assumes no combination of '\' and '/'.
+
+        :param filename: relative path to file in user's perspective
+        :return: actual filename from relative path.
+        """
+        win_style_extract = filename.split("/")[-1]
+        unix_style_extract = filename.split("\\")[-1]
+        
+        if win_style_extract == filename: # no "\" are present
+            return unix_style_extract
+        return win_style_extract # no "/" are present
+
+
     def recv_str_with_null_term(self, byte_count):
         """
         [NOTE] this method clears <byte_count> bytes from the socket's buffer
@@ -98,6 +116,9 @@ class Request:
 
 
     def save_file(self, client_id, filename, encrypted_filecontent):
+        # sanitize relative path from filename
+        filename = Request.extract_filename(filename)
+
         # get client_id aes key
         client = self.db.get_client_by_id(client_id)
         if not client:
