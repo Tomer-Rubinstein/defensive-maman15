@@ -18,9 +18,6 @@
 #include "MeInfo.h"
 #include "PrivKeyFile.h"
 
-#define HOST "127.0.0.1"
-#define PORT 8000
-
 SOCKET connect_to_server(const char* host, int port) {
 	WSAData wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -88,7 +85,24 @@ int main() {
 	TransferInfo* transfer_info = new TransferInfo();
 	FileTransfer* file = new FileTransfer(transfer_info->get_target_filepath());
 
-	SOCKET client_socket = connect_to_server(HOST, PORT);
+	// parse host address and port from transfer.info file
+	std::string host_info = transfer_info->get_host_addr();
+	std::string host_addr = "";
+	std::string host_port = "";
+
+	bool is_host_addr = true;
+	for (int i = 0; i < host_info.length(); i++) {
+		if (host_info[i] == ':') {
+			is_host_addr = false;
+			continue;
+		}
+		if (is_host_addr)
+			host_addr += host_info[i];
+		else
+			host_port += host_info[i];
+	}
+
+	SOCKET client_socket = connect_to_server(host_addr.c_str(), std::stoi(host_port));
 
 	Request* req = new Request(client_socket);
 	Response* resp = new Response(client_socket);
